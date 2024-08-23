@@ -5,6 +5,7 @@ class AlbumsHandler {
 
     this.postAlbumHandler = this.postAlbumHandler.bind(this);
     this.getAlbumByIdHandler = this.getAlbumByIdHandler.bind(this);
+    this.putAlbumByIdHandler = this.putAlbumByIdHandler.bind(this);
   }
 
   async postAlbumHandler(request, h){
@@ -17,7 +18,7 @@ class AlbumsHandler {
     const response = h.response({
       status: 'success',
       data: {
-        albumId,
+        albumId
       },
     });
     response.code(201);
@@ -34,6 +35,19 @@ class AlbumsHandler {
       data: {
         album
       }
+    };
+  }
+
+  async putAlbumByIdHandler(request) {
+    this._validator.validateAlbumsPayload(request.payload);
+
+    const { id } = request.params;
+
+    await this._serivce.editAlbumById(id, request.payload);
+
+    return {
+      status: 'success',
+      message: 'Album successfully updated'
     };
   }
 }
