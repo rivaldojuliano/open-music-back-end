@@ -1,4 +1,4 @@
-const mapDBTOModel = ({
+const mapDBToModel = ({
   id,
   title,
   year,
@@ -18,4 +18,4 @@ const mapDBTOModel = ({
   albumId: album_id
 });
 
-module.exports = { mapDBTOModel };
+module.exports = { mapDBToModel };
