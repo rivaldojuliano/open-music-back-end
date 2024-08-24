@@ -38,21 +38,7 @@ class AlbumsService {
       throw new NotFoundError('Album not found');
     }
 
-    const album = result.rows[0];
-
-    const querySong = {
-      text: 'SELECT id, title, performer FROM songs WHERE album_id = $1',
-      values: [album.id]
-    };
-
-    const resultSong = await this._pool.query(querySong);
-
-    const songs = resultSong.rows;
-
-    return {
-      ...album,
-      songs
-    };
+    return result.rows[0];
   }
 
   async editAlbumById(id, { name, year }) {
