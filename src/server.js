@@ -1,6 +1,8 @@
 require('dotenv').config();
 const Hapi = require('@hapi/hapi');
 
+const Jwt = require('@hapi/jwt');
+
 // albums
 const albums = require('./api/albums');
 const AlbumsService = require('./services/postgres/AlbumsService');
@@ -22,6 +24,11 @@ const AuthenticationsService = require('./services/postgres/AuthenticationsServi
 const TokenManager = require('./tokenize/TokenManager');
 const AuthenticationsValidator = require('./validator/authentications');
 
+// playlists
+const playlists = require('./api/playlists');
+const PlaylistsService = require('./services/postgres/PlaylistsService');
+const PlaylistsValidator = require('./validator/playlists');
+
 const ClientError = require('./exceptions/ClientError');
 
 
@@ -30,17 +37,45 @@ const init = async () => {
   const songsService = new SongsService();
   const usersService = new UsersService();
   const authenticationsService = new AuthenticationsService();
+  const playlistsService = new PlaylistsService();
 
   const server = Hapi.server({
     // eslint-disable-next-line no-undef
     port: process.env.PORT,
     // eslint-disable-next-line no-undef
     host: process.env.HOST,
+    debug: {
+      request: ['error']
+    },
     routes: {
       cors: {
         origin: ['*']
       }
     }
+  });
+
+  await server.register([
+    {
+      plugin: Jwt
+    }
+  ]);
+
+  server.auth.strategy('openmusicapp_jwt', 'jwt', {
+    // eslint-disable-next-line no-undef
+    keys: process.env.ACCESS_TOKEN_KEY,
+    verify: {
+      aud: false,
+      iss: false,
+      sub: false,
+      // eslint-disable-next-line no-undef
+      maxAgeSec: process.env.ACCESS_TOKEN_AGE
+    },
+    validate: (artifacts) => ({
+      isValid: true,
+      credentials: {
+        id: artifacts.decoded.payload.id
+      }
+    })
   });
 
   await server.register([
@@ -72,6 +107,13 @@ const init = async () => {
         usersService,
         tokenManager: TokenManager,
         validator: AuthenticationsValidator
+      }
+    },
+    {
+      plugin: playlists,
+      options: {
+        service: playlistsService,
+        validator: PlaylistsValidator
       }
     }
   ]);
