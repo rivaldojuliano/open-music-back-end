@@ -14,10 +14,12 @@ exports.up = (pgm) => {
       type: 'VARCHAR(50)',
       primaryKey: true
     },
+    // eslint-disable-next-line camelcase
     playlist_id: {
       type: 'VARCHAR(50)',
       notNull: true
     },
+    // eslint-disable-next-line camelcase
     song_id: {
       type: 'VARCHAR(50)',
       notNull: true

@@ -2,6 +2,7 @@ const { Pool } = require('pg');
 const { nanoid } = require('nanoid');
 const InvariantError = require('../../exceptions/InvariantError');
 const AuthorizationError = require('../../exceptions/AuthorizationError');
+const NotFoundError = require('../../exceptions/NotFoundError');
 
 class PlaylistsService {
   constructor() {
@@ -27,7 +28,7 @@ class PlaylistsService {
 
   async getPlaylists(owner) {
     const query = {
-      text: 'SELECT * FROM playlists WHERE owner = $1',
+      text: 'SELECT playlists.id, playlists.name , users.username FROM playlists LEFT JOIN users ON users.id = playlists.owner WHERE playlists.owner = $1',
       values: [owner]
     };
 
@@ -58,7 +59,7 @@ class PlaylistsService {
     const result = await this._pool.query(query);
 
     if (!result.rows.length) {
-      throw new InvariantError('Playlist not found');
+      throw new NotFoundError('Playlist not found');
     }
 
     const playlist = result.rows[0];
@@ -83,6 +84,48 @@ class PlaylistsService {
     }
 
     return result.rows[0].id;
+  }
+
+  async getSongPlaylist(playlistId) {
+    const queryGetPlaylist = {
+      text: 'SELECT playlists.id, playlists.name , users.username FROM playlists INNER JOIN users ON playlists.owner = users.id WHERE playlists.id = $1',
+      values: [playlistId]
+    };
+
+    const playlistResult = await this._pool.query(queryGetPlaylist);
+
+    if (!playlistResult.rows.length) {
+      throw new NotFoundError('Playlist not found');
+    }
+
+    const queryGetSong = {
+      text: 'SELECT songs.id, songs.title, songs.performer FROM songs LEFT JOIN playlist_songs ON playlist_songs.song_id = songs.id WHERE playlist_songs.playlist_id = $1',
+      values: [playlistId]
+    };
+
+    const songResult = await this._pool.query(queryGetSong);
+
+    const playlist = playlistResult.rows[0];
+
+    return {
+      id: playlist.id,
+      name: playlist.name,
+      username: playlist.username,
+      songs: songResult.rows
+    };
+  }
+
+  async deleteSongFromPlaylist(playlistId, songId) {
+    const query = {
+      text: 'DELETE FROM playlist_songs WHERE playlist_id = $1 AND song_id = $2 RETURNING id',
+      values: [playlistId, songId]
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rows.length) {
+      throw new InvariantError('Failed deleted song from playlist');
+    }
   }
 }
 
