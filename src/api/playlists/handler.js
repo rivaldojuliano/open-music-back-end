@@ -63,6 +63,8 @@ class PlaylistsHandler {
     await this._songsService.getSongById(songId);
     const songPlaylistId = await this._service.addSongPlaylist(id, songId);
 
+    await this._service.addActivity(id, songId, credentialId, 'add');
+
     const response = h.response({
       status: 'success',
       message: 'Song added to playlist',
@@ -99,9 +101,28 @@ class PlaylistsHandler {
 
     await this._service.deleteSongFromPlaylist(id, songId);
 
+    await this._service.addActivity(id, songId, credentialId, 'delete');
+
     return {
       status: 'success',
       message: 'Song deleted successfully'
+    };
+  }
+
+  async getPlaylistActivitiesByIdHandler(request) {
+    const { id } = request.params;
+    const { id: credentialId } = request.auth.credentials;
+
+    await this._service.verifyPlaylistOwner(id, credentialId);
+
+    const activities = await this._service.getPlaylistActivityById(id);
+
+    return {
+      status: 'success',
+      data: {
+        playlistId: id,
+        activities
+      }
     };
   }
 }
