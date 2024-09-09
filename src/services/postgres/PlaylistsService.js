@@ -146,7 +146,7 @@ class PlaylistsService {
 
   async getPlaylistActivityById(playlistId) {
     const query = {
-      text: 'SELECT users.username, songs.title, playlist_song_activities.action, playlist_song_activities.time FROM playlist_song_activities INNER JOIN songs ON playlist_song_activities.user_id = users.id WHERE playlist_id = $1 ORDER BY playlist_song_activities.time ASC',
+      text: 'SELECT users.username, songs.title, playlist_song_activities.action, playlist_song_activities.time FROM playlist_song_activities INNER JOIN songs ON playlist_song_activities.song_id = songs.id INNER JOIN users ON playlist_song_activities.user_id = users.id WHERE playlist_song_activities.playlist_id = $1 ORDER BY playlist_song_activities.time ASC',
       values: [playlistId]
     };
 
