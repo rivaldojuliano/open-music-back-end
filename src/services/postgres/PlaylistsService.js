@@ -144,24 +144,7 @@ class PlaylistsService {
     }
   }
 
-  async getPlaylistById(playlistId) {
-    const query = {
-      text: 'SELECT * FROM playlists WHERE id = $1',
-      values: [playlistId]
-    };
-
-    const result = await this._pool.query(query);
-
-    if (!result.rows.length) {
-      throw new NotFoundError('Playlist not found');
-    }
-
-    return result.rows[0];
-  }
-
   async getPlaylistActivityById(playlistId) {
-    await this.getPlaylistById(playlistId);
-
     const query = {
       text: 'SELECT users.username, songs.title, playlist_song_activities.action, playlist_song_activities.time FROM playlist_song_activities INNER JOIN songs ON playlist_song_activities.user_id = users.id WHERE playlist_id = $1 ORDER BY playlist_song_activities.time ASC',
       values: [playlistId]
