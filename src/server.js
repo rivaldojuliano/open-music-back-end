@@ -38,12 +38,12 @@ const ClientError = require('./exceptions/ClientError');
 
 
 const init = async () => {
+  const collaborationsService = new CollaborationsService();
+  const playlistsService = new PlaylistsService(collaborationsService);
   const albumsService = new AlbumsService();
   const songsService = new SongsService();
   const usersService = new UsersService();
   const authenticationsService = new AuthenticationsService();
-  const collaborationsService = new CollaborationsService();
-  const playlistsService = new PlaylistsService(collaborationsService);
 
   const server = Hapi.server({
     // eslint-disable-next-line no-undef
