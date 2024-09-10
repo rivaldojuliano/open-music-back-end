@@ -5,8 +5,9 @@ const AuthorizationError = require('../../exceptions/AuthorizationError');
 const NotFoundError = require('../../exceptions/NotFoundError');
 
 class PlaylistsService {
-  constructor() {
+  constructor(collaborationsService) {
     this._pool = new Pool();
+    this._collbaorationsService = collaborationsService;
   }
 
   async addPlaylist({ name, owner }) {
@@ -82,8 +83,6 @@ class PlaylistsService {
     if (!result.rows.length) {
       throw new InvariantError('Failed to add song to playlist');
     }
-
-    return result.rows[0].id;
   }
 
   async getSongPlaylist(playlistId) {
@@ -152,6 +151,22 @@ class PlaylistsService {
 
     const result = await this._pool.query(query);
     return result.rows;
+  }
+
+  async verifyPlaylistAccess(playlistId, userId) {
+    try {
+      await this.verifyPlaylistOwner(playlistId, userId);
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
+
+      try {
+        await this._collbaorationsService.verifyCollaborator(playlistId, userId);
+      } catch {
+        throw error;
+      }
+    }
   }
 }
 
