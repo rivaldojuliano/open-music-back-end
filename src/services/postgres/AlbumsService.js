@@ -31,13 +31,27 @@ class AlbumsService {
       values: [id]
     };
 
-    const result = await this._pool.query(query);
+    const queryGetSong = {
+      text: 'SELECT * FROM songs WHERE album_id = $1',
+      values: [id]
+    };
 
-    if (!result.rows.length) {
+    const albumResult = await this._pool.query(query);
+    const songsResult = await this._pool.query(queryGetSong);
+
+    if (!albumResult.rows.length) {
       throw new NotFoundError('Album not found');
     }
 
-    return result.rows[0];
+    const album = albumResult.rows[0];
+
+    return {
+      id: album.id,
+      name: album.name,
+      year: album.year,
+      coverUrl: album.cover_url,
+      songs: songsResult.rows
+    };
   }
 
   async editAlbumById(id, { name, year }) {
@@ -63,6 +77,19 @@ class AlbumsService {
 
     if (!result.rows.length) {
       throw new NotFoundError('Failed to delete album. ID not found');
+    }
+  }
+
+  async addCoverUrlAlbum(id, dir) {
+    const query = {
+      text: 'UPDATE albums SET cover_url = $1 WHERE id = $2 RETURNING id',
+      values: [dir, id]
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rowCount) {
+      throw new NotFoundError('Failed to add cover. ID not found');
     }
   }
 }

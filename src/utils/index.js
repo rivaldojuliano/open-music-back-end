@@ -6,7 +6,7 @@ const mapDBToModel = ({
   performer,
   duration,
   // eslint-disable-next-line camelcase
-  album_id,
+  album_id
 }) => ({
   id,
   title,
