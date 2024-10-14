@@ -92,6 +92,56 @@ class AlbumsService {
       throw new NotFoundError('Failed to add cover. ID not found');
     }
   }
+
+  async addAlbumLikeById(userId, albumId) {
+    const id = `like-${nanoid(16)}`;
+
+    const queryCheckLike = {
+      text: 'SELECT id FROM user_album_likes WHERE user_id = $1 AND album_id = $2',
+      values: [userId, albumId]
+    };
+
+    const result = await this._pool.query(queryCheckLike);
+
+    if (result.rowCount) {
+      throw new InvariantError('Failed to like the album');
+    } else {
+      const query = {
+        text: 'INSERT INTO user_album_likes VALUES($1, $2, $3) RETURNING id',
+        values: [id, userId, albumId]
+      };
+
+      await this._pool.query(query);
+    }
+  }
+
+  async deleteAlbumLikeById(userId, albumId) {
+    const query = {
+      text: 'DELETE FROM user_album_likes WHERE user_id = $1 AND album_id = $2 RETURNING id',
+      values: [userId, albumId]
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rows.length) {
+      throw new NotFoundError('Failed delete like');
+    }
+  }
+
+  async getAlbumLikeById(albumId) {
+    const query = {
+      text: 'SELECT COUNT(id) FROM user_album_likes WHERE album_id = $1',
+      values: [albumId]
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rows.length) {
+      throw new NotFoundError('Failed to pick up the number of likes');
+    }
+
+    return parseInt(result.rows[0].count);
+  }
 }
 
 module.exports = AlbumsService;
