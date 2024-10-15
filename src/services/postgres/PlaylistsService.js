@@ -5,9 +5,10 @@ const AuthorizationError = require('../../exceptions/AuthorizationError');
 const NotFoundError = require('../../exceptions/NotFoundError');
 
 class PlaylistsService {
-  constructor(collaborationsService) {
+  constructor(collaborationsService, cacheService) {
     this._pool = new Pool();
     this._collbaorationsService = collaborationsService;
+    this._cacheService = cacheService;
   }
 
   async addPlaylist({ name, owner }) {
@@ -24,18 +25,29 @@ class PlaylistsService {
       throw new InvariantError('Failed to add playlists');
     }
 
+    await this._cacheService.delete(`playlist:${owner}`);
+
     return result.rows[0].id;
   }
 
   async getPlaylists(owner) {
-    const query = {
-      text: 'SELECT playlists.id, playlists.name , users.username FROM playlists LEFT JOIN users ON users.id = playlists.owner LEFT JOIN collaborations ON collaborations.playlist_id = playlists.id WHERE playlists.owner = $1 OR collaborations.user_id = $1',
-      values: [owner]
-    };
+    try {
+      const result = await this._cacheService.get(`playlist:${owner}`);
+      return JSON.parse(result);
+    } catch {
+      const query = {
+        text: 'SELECT playlists.id, playlists.name , users.username FROM playlists LEFT JOIN users ON users.id = playlists.owner LEFT JOIN collaborations ON collaborations.playlist_id = playlists.id WHERE playlists.owner = $1 OR collaborations.user_id = $1',
+        values: [owner]
+      };
 
-    const result = await this._pool.query(query);
+      const result = await this._pool.query(query);
 
-    return result.rows;
+      const playlist = result.rows;
+
+      await this._cacheService.set(`playlist:${owner}`, JSON.stringify(playlist));
+
+      return playlist;
+    }
   }
 
   async deletePlaylists(id) {
@@ -49,6 +61,9 @@ class PlaylistsService {
     if (!result.rows.length) {
       throw new InvariantError('Failed to delete song. ID not found');
     }
+
+    const { owner } = result.rows[0];
+    await this._cacheService.delete(`playlist:${owner}`);
   }
 
   async verifyPlaylistOwner(id, owner) {
